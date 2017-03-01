@@ -28,17 +28,18 @@ export class Context {
         this.res = _req.res = _res.res = res
         _req.ctx = _res.ctx = this
 
-
-
     }
 
-
+    /**
+     *
+     * @param arg
+     */
     throw (...arg) :void {
         if(arg){
             if(arg[0] instanceof Error)
                 throw arg[0]
         }
-        throw this.createError.apply(this.ctx , arg)
+        throw this.createError.apply(this , arg)
     }
 
     /**
@@ -66,6 +67,7 @@ export class Context {
     NotFound () {
         this.createError(404)
     }
+
 }
 
 /**

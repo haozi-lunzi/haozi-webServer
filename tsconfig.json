@@ -1,4 +1,18 @@
 {
+  "compilerOptions": {
+    "target": "ES6",
+    "module": "commonjs",
+    "declaration": false,
+    "noLib": false
+  },
+  "filesGlob":[
+    "./**/*.ts",
+    "!./node_modules/**/*.ts"
+  ],
+  "files": [
+    "./src/**/*",
+    "./typings/es6-promise/es6-promise.d.ts"
+  ],
   "include" : [
     "src/**/*",
     "typings/**/*"

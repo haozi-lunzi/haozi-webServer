@@ -10,10 +10,16 @@ const app:Application = new Application()
 
 
 
+app.use(async function(ctx,next){
 
 
+    console.log(233)
+    await next()
+
+})
 
 
+app.listen(2333)
 
 
 

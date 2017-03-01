@@ -5,26 +5,24 @@
 /**
  * 依赖
  */
-import http from 'http'
-import {EventEmitter} from 'events'
 
+import {createServer,Server} from 'http'
+import {EventEmitter} from 'events'
 import request from './req'
 import response from './res'
 import {Context} from './context'
+// import {Promise} from 'es6-promise'
 import Promise = Promise
-import debug from 'debug'
-
-
 /**
  *  Application class
  *  @extends  Event.EventEmitter
  *  @export
  *  @api public
  */
-export default class Application extends EventEmitter {
+export class Application extends EventEmitter {
 
     public middlewares:Function[]
-    public httpServer:http.Server
+    public httpServer:Server
 
     /**
      * 构造函数
@@ -41,7 +39,7 @@ export default class Application extends EventEmitter {
      *
      */
     private callback () :Function{
-
+        console.log('callback')
         //将中间件进行组合
         let fn = this.compose(this.middlewares)
         /**
@@ -56,7 +54,11 @@ export default class Application extends EventEmitter {
              * 包装req和res
              * @type {Context}
              */
+
             let ctx:Context = new Context(this, req, res)
+            fn(ctx).then(() => {
+
+            }).catch(this.onerror)
         }
     }
 
@@ -67,8 +69,8 @@ export default class Application extends EventEmitter {
      * @returns {Server}
      * @api public
      */
-    public listen (...v) :http.Server{
-        this.httpServer = http.createServer(this.callback())
+    public listen (...v) :Server{
+        this.httpServer = createServer(this.callback())
         return this.httpServer.listen.apply(this.httpServer , v)
     }
 
@@ -79,7 +81,7 @@ export default class Application extends EventEmitter {
      * @returns {Application} this
      * @api public
      */
-    public use (fn:Function) : Application{
+    public use (fn:Promise<void>) : Application{
         this.middlewares.push(fn)
         return this
     }
@@ -91,7 +93,7 @@ export default class Application extends EventEmitter {
      */
     private onerror (err:Error) :void{
         console.error('\t---------------------------------------------------------------')
-        console.error('\t-------------------服务器出错了  _(:зゝ∠)_----------------------')
+        console.error('\t--------------------服务器出错了  _(:зゝ∠)_----------------------')
         console.error(`\t -> ${err.stack || err.toString()}`)
     }
 
@@ -103,19 +105,19 @@ export default class Application extends EventEmitter {
     /**
      * 将所有中间件组合起来
      * @param middleware 中间件的数组
-     * @returns {(ctx:Context, next?:Promise)=>any}
+     * @returns {Function}
      * @api private
      */
     private compose (middleware:Function[]):Function {
-        return (ctx:Context,next?:Promise) => {
+        return (ctx:Context,next?:Promise<any>|Function) => {
             //定义索引表示执行到了第几个
-            let index = 0
+            let index:number = 0
             //定义处理函数
             let dispatch:Function = (i:number) => {
             //更新索引
                 index = i
             //判断中间件是否存在 否在执行挂起的中间件
-                const cb = middleware[i] || next
+                const cb:(Context,Function)=>Function|Promise<any> = middleware[i] || next
             // 如果都不存在 就返回一个resolved形态的Promise
                 if(!cb){
                     return Promise.resolve()
@@ -125,10 +127,11 @@ export default class Application extends EventEmitter {
             //Promise.resolve的方法传入一个thenable的对象(可以then的) 返回的promise会跟随这个thenable对象直到返回resolve状态
             //https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Promise/resolve  mdn参考
             // 当中间件await 的时候 递归执行 dispatch 函数调用下一个中间件
-                    return Promise.resolve(cb(ctx, () =>{
+                    return Promise.resolve(cb(ctx:Context, () =>{
                         return dispatch(i + 1)
                     }))
                 }catch (err){
+                    console.log(Promise)
                     return Promise.reject(err)
                 }
             }
